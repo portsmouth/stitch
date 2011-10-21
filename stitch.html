@@ -1,0 +1,497 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<HTML>
+
+<!-- head -->
+<HEAD>
+<TITLE>Stitch</TITLE>
+<STYLE type='text/css'><!--
+BODY { font-family: verdana, arial; }
+P { font-size: 12px; }
+H1 { font-size: 20px; color: #B00000; margin-top: 0px; }
+H2 { font-size: 16px; padding-top: 6px; }
+H3 { font-size: 13px; padding-top: 6px; }
+HR { color: #A00000; background-color: #A00000; height: 2px; border: 0px; margin: 13px 0px; }
+PRE { margin-left: 30px; margin-right: 30px; }
+IMG { border: none; }
+.floatright { float: right;	}
+TABLE { border: none; padding: none; font-size: 13px; }
+A.menu { text-decoration: none; font-size: 16px; }
+A.menu:visited, A.menu:link { color: #A00060; }
+A.menu:hover { color: #FF0000; }
+PRE.code { background-color: #ffffe0; border: 1px solid; padding: 10px; }
+PRE.code I { color: #007f00; }
+PRE.code B { color: #a00000; }
+SPAN.date { color: #B00000; }
+--></STYLE>
+</HEAD>
+
+
+<!-----------------------------------------------------------------------------------
+  // Script for Google map
+    
+  // The Key Embedded in the following script tags is designed to work with
+  // the following site:
+  // http://www.jportsmouth.com
+----------------------------------------------------------------------------------->
+
+<script src="http://maps.google.com/maps?file=api&v=2&key=ABQIAAAAX9TGfrzmvpTmZ2579h9_hBRLtxenowuMQeodhRRzuZuNOo123RQPBnbNPByq9oAAgMX2hF6FW1epPQ"
+type="text/javascript"> 
+</script>
+
+<script src="http://www.google.com/uds/api?file=uds.js&v=1.0&source=uds-msw&key=ABQIAAAAX9TGfrzmvpTmZ2579h9_hBRLtxenowuMQeodhRRzuZuNOo123RQPBnbNPByq9oAAgMX2hF6FW1epPQ"
+type="text/javascript"> 
+</script>
+ 
+  
+<style type="text/css">
+   @import url("http://www.google.com/uds/css/gsearch.css");
+</style>
+  
+ <script type="text/javascript">
+    
+    var blueMarker;
+    var redMarker;
+    var map;
+    
+    function MyApplication() 
+    {    
+        map = new GMap2(document.getElementById("map_canvas"));
+        map.addControl(new GLargeMapControl());
+        map.addControl(new GMapTypeControl(false));
+        
+		zeroPt = new GPoint(0,0);
+		var NORMAL_MAP_URL_FORMAT    = G_NORMAL_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
+		var SATELLITE_MAP_URL_FORMAT = G_SATELLITE_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
+		var PHYSICAL_MAP_URL_FORMAT  = G_PHYSICAL_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
+		
+		var MOON_ELEVATION_MAP_URL_FORMAT    = G_MOON_ELEVATION_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
+		var MARS_ELEVATION_MAP_URL_FORMAT = G_MARS_ELEVATION_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
+		var MARS_VISIBLE_MAP_URL_FORMAT    = G_MARS_VISIBLE_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
+		var MARS_INFRARED_MAP_URL_FORMAT  = G_MARS_INFRARED_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
+		var SKY_VISIBLE_MAP_URL_FORMAT  = G_SKY_VISIBLE_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
+		
+    	document.getElementById("normalMapUrlFormat").innerHTML        = "NRM_URL = \"" + NORMAL_MAP_URL_FORMAT + "\"";
+    	document.getElementById("satelliteMapUrlFormat").innerHTML     = "SAT_URL = \"" + SATELLITE_MAP_URL_FORMAT + "\"";
+    	document.getElementById("physicalMapUrlFormat").innerHTML      = "PHY_URL = \"" + PHYSICAL_MAP_URL_FORMAT + "\"";
+    	document.getElementById("skyVisibleMapUrlFormat").innerHTML    = "SKY_URL = \"" + SKY_VISIBLE_MAP_URL_FORMAT + "\"";
+    	//document.getElementById("moonElevationMapUrlFormat").innerHTML = "MOE_URL = \"" + MOON_ELEVATION_MAP_URL_FORMAT + "\"";
+    	//document.getElementById("marsElevationMapUrlFormat").innerHTML = "MAE_URL = \"" + MARS_ELEVATION_MAP_URL_FORMAT + "\"";
+    	//document.getElementById("marsVisibleMapUrlFormat").innerHTML   = "MAV_URL = \"" + MARS_VISIBLE_MAP_URL_FORMAT + "\"";
+    	//document.getElementById("marsInfraredMapUrlFormat").innerHTML  = "MAI_URL = \"" + MARS_INFRARED_MAP_URL_FORMAT + "\"";
+    	
+        map.addMapType(G_NORMAL_MAP);
+        map.addMapType(G_SATELLITE_MAP);
+        map.removeMapType(G_HYBRID_MAP);
+        map.addMapType(G_PHYSICAL_MAP);
+        map.addMapType(G_SKY_VISIBLE_MAP);
+        //map.addMapType(G_MOON_ELEVATION_MAP);
+        //map.addMapType(G_MARS_ELEVATION_MAP); 
+        //map.addMapType(G_MARS_VISIBLE_MAP);
+        //map.addMapType(G_MARS_INFRARED_MAP);
+        
+        map.enableContinuousZoom();
+        map.enableScrollWheelZoom();
+        this.counter = 0;
+        
+        var center = new GLatLng(0.0, 0.0);
+        var cX = center.lng();
+        var cY = center.lat();
+              
+        map.setCenter(center, 2);
+        map.setMapType(G_SATELLITE_MAP);
+        
+        var span = map.getBounds().toSpan()
+        var X = span.lng()
+        var Y = span.lat()
+        var xBlue = cX - 0.25*X
+        var yBlue = cY - 0.25*Y
+        var xRed = cX + 0.25*X
+        var yRed = cY + 0.25*Y
+        
+        var cBlue = new GLatLng(yBlue, xBlue);
+        var cRed = new GLatLng(yRed, xRed);
+   
+        // Create our "tiny" marker icon
+        var blueIcon = new GIcon(G_DEFAULT_ICON);
+        blueIcon.image = "http://www.google.com/intl/en_us/mapfiles/ms/micons/blue-dot.png";
+        var redIcon = new GIcon(G_DEFAULT_ICON);
+        redIcon.image = "http://www.google.com/intl/en_us/mapfiles/ms/micons/red-dot.png";
+                
+        // Set up our GMarkerOptions object
+        blueMarkerOptions = { icon:blueIcon, draggable:true };
+        redMarkerOptions = { icon:redIcon, draggable:true };
+ 
+        blueMarker = new GMarker(cBlue, blueMarkerOptions);
+        redMarker = new GMarker(cRed, redMarkerOptions);
+                     
+        document.getElementById("cornerBlueLat").value = blueMarker.getLatLng().lat();
+        document.getElementById("cornerBlueLng").value = blueMarker.getLatLng().lng();
+        document.getElementById("cornerRedLat").value = redMarker.getLatLng().lat();
+        document.getElementById("cornerRedLng").value = redMarker.getLatLng().lng();
+                 
+        updateCode();
+                    
+        GEvent.addListener(blueMarker, "drag", function() {
+            document.getElementById("cornerBlueLat").value = blueMarker.getLatLng().lat();
+            document.getElementById("cornerBlueLng").value = blueMarker.getLatLng().lng();
+            updateCode();
+            updateBox();
+        });
+        
+        GEvent.addListener(blueMarker, "dragend", function() {
+            updateBox();
+        });
+              
+        GEvent.addListener(redMarker, "drag", function() {
+            document.getElementById("cornerRedLat").value = redMarker.getLatLng().lat();
+            document.getElementById("cornerRedLng").value = redMarker.getLatLng().lng();
+            updateCode();
+            updateBox();
+        });
+
+        GEvent.addListener(redMarker, "dragend", function() {
+            updateBox();
+        });   
+                 
+        map.addOverlay(blueMarker);
+        map.addOverlay(redMarker);
+        
+        // initialize`range box
+        var c0 = new GLatLng(yBlue, xBlue);
+        var c1 = new GLatLng(yBlue, xRed);
+        var c2 = new GLatLng(yRed, xRed);
+        var c3 = new GLatLng(yRed, xBlue);
+
+        polyline0 = new GPolyline([c0, c1], "#ff5500", 2);
+        polyline1 = new GPolyline([c1, c2], "#ff5500", 2);
+        polyline2 = new GPolyline([c2, c3], "#ff5500", 2);
+        polyline3 = new GPolyline([c3, c0], "#ff5500", 2);
+        map.addOverlay(polyline0);
+        map.addOverlay(polyline1);
+        map.addOverlay(polyline2);
+        map.addOverlay(polyline3);
+    }
+
+    function initialize() 
+    {
+        var application = new MyApplication();
+    }
+    
+    function updateBox()
+    {
+        map.removeOverlay(polyline0);
+        map.removeOverlay(polyline1);
+        map.removeOverlay(polyline2);
+        map.removeOverlay(polyline3);
+        delete polyline0;
+        delete polyline1;
+        delete polyline2;
+        delete polyline3;
+  
+        var xBlue = blueMarker.getLatLng().lng();
+        var yBlue = blueMarker.getLatLng().lat();
+        var xRed = redMarker.getLatLng().lng();
+        var yRed = redMarker.getLatLng().lat();
+        
+        var c0 = new GLatLng(yBlue, xBlue);
+        var c1 = new GLatLng(yBlue, xRed);
+        var c2 = new GLatLng(yRed, xRed);
+        var c3 = new GLatLng(yRed, xBlue);
+
+        polyline0 = new GPolyline([c0, c1], "#ff5500", 2);
+        polyline1 = new GPolyline([c1, c2], "#ff5500", 2);
+        polyline2 = new GPolyline([c2, c3], "#ff5500", 2);
+        polyline3 = new GPolyline([c3, c0], "#ff5500", 2);
+        map.addOverlay(polyline0);
+        map.addOverlay(polyline1);
+        map.addOverlay(polyline2);
+        map.addOverlay(polyline3);
+    }
+
+    function updateCode()
+    {
+        document.getElementById("coordcode").value = 
+        document.getElementById("cornerBlueLng").value + '_' + 
+        document.getElementById("cornerBlueLat").value + '_' +
+        document.getElementById("cornerRedLng").value + '_' +
+        document.getElementById("cornerRedLat").value;
+    }
+    
+    function resetMarkers()
+    {
+        var C = map.getCenter();
+        cX = C.lng()
+        cY = C.lat()
+    
+        var span = map.getBounds().toSpan()
+        var X = span.lng()
+        var Y = span.lat()
+        var xBlue = cX - 0.25*X
+        var yBlue = cY - 0.25*Y
+        var xRed = cX + 0.25*X
+        var yRed = cY + 0.25*Y
+        
+        var cBlue = new GLatLng(yBlue, xBlue);
+        var cRed = new GLatLng(yRed, xRed);
+        
+        blueMarker.setLatLng(cBlue);
+        redMarker.setLatLng(cRed);
+        
+        document.getElementById("cornerBlueLat").value = blueMarker.getLatLng().lat();
+        document.getElementById("cornerBlueLng").value = blueMarker.getLatLng().lng();
+        document.getElementById("cornerRedLat").value = redMarker.getLatLng().lat();
+        document.getElementById("cornerRedLng").value = redMarker.getLatLng().lng();
+        updateCode();
+        updateBox();
+    }
+    
+    function updateMarkers()
+    {
+    	var lngBlue = document.getElementById("cornerBlueLng").value;
+    	var latBlue = document.getElementById("cornerBlueLat").value;
+    	var lngRed = document.getElementById("cornerRedLng").value;
+    	var latRed = document.getElementById("cornerRedLat").value;
+    	var cBlue = new GLatLng(latBlue, lngBlue);
+    	var cRed = new GLatLng(latRed, lngRed);
+    	
+    	blueMarker.setLatLng(cBlue);
+        redMarker.setLatLng(cRed);
+        updateCode();
+        updateBox();
+        
+        return false;
+    }
+
+</script>
+
+<!--------------------------------------------------------------------------------->
+
+
+<!-- page centering -->
+<BODY onload="initialize()" onunload="GUnload()">
+    
+<TABLE width='100%'>
+<TR><TD align='center' valign='top'>
+
+<!-- main column table -->
+<TABLE cellpadding='0' cellspacing='0' width='800' border=0>
+<TR><TD>
+<BR>
+
+<!-- title -->
+<H1>Stitch</H1>
+<HR>
+
+ <!-- menu and pics -->
+<TABLE max-width="834" cellpadding='6' cellspacing='0' border=0>
+<COLGROUP><COL width='150'><COL></COLGROUP>
+<TR><TD valign='top'>
+
+<!-- menu -->
+<P><A class='menu' href='../../index.html'>home</A></P>
+<P><A class='menu' href='../../artwork/artwork.html'>artwork</A></P>
+<P><A class='menu' href='../code.html'>code</A></P>
+<BR>
+</TD> 
+
+
+ 
+ <!-- content table -->
+<TD valign='top'>
+</TD><TD valign='top'>
+
+
+<!-- images --->
+
+<table border="0" cellspacing="0" cellpadding="4">
+<tr>
+<td width="40">
+</td>
+<td>
+
+<div>				
+<table max-width="800" border="0" cellspacing="0" cellpadding="2">
+
+<tr>
+<td colspan="2" align="left" valign="top" width="33%" ">
+    <a href="./stitchUI.png"  target="_self"> <img src="./thumbnails/stitchUI_thumbnail.png" alt="" /></a>
+</td>
+<td colspan="2" align="left" valign="top" width="33%" ">
+    <a href="./map_hybrid_31623_21249.jpg"  target="_self"> <img src="./thumbnails/map_hybrid_31623_21249_thumbnail.jpg" alt="" /></a>
+</td>
+<td colspan="2" align="left" valign="top" width="33%" ">
+    <a href="./map_terrain_364_216.jpg"  target="_self"> <img src="./thumbnails/map_terrain_364_216_thumbnail.jpg" alt="" /></a>
+</td>
+</tr>
+
+<tr>
+<td colspan="2" align="left" valign="top" width="33%" ">
+</td>
+<td colspan="2" align="left" valign="top" width="33%" ">
+    3280x2632 (1.3 MB)
+</td>
+<td colspan="2" align="left" valign="top" width="33%" ">
+    8448x5376 (9 MB)
+</td>
+</tr>
+
+</table>
+		</div>
+		<br>
+		</table>
+			
+<!-- text -->		
+<BR>
+<P>Stitch is a Python script to assemble large Google maps. A rectangle of latitude and longitude is specified (or generated via the 
+coordinates tool below), as well as the desired map dimensions.
+The appropriate tiles are then automatically downloaded and stitched together into a single map (which is cropped
+to precisely match the specified rectangle).  Some examples of the humongous maps you can make are shown above &mdash; a street map of
+Dublin in the center, and a terrain map of the Tibetan plateau on the right (view in the browser at your peril).
+<br>
+<br>
+You can enter latitude and longitude coordinates directly, or use the tool below to convert a rectangle drawn in google maps
+into a text string code which can be copied and pasted into the GUI. Three map types are supported: satellite, hybrid (i.e. roads/boundaries
+overlaid on the satellite map), and terrain. The map dimensions are specified either as the number of pixels desired along the long edge of the rectangle (which will only be matched approximately by
+the stitched map, since no resampling is done), or alternatively by entering the zoom level of the Google tiles directly.
+<br>
+<br>
+Note that Google may temporarily block your IP if you download too many tiles. To combat this, on restarting Stitch, the tiles already downloaded do not need to 
+be downloaded again (provided the generated tiles/ directory is not deleted). 
+
+
+
+
+<H3>Download v3.0</H3>
+
+You need to have the <a href="http://www.pythonware.com/products/pil/">Python Imaging Library</a> (PIL) and <a href="http://www.wxpython.org/">wxPython</a> installed.
+<BR>
+<BR>
+<A href="./stitch.py">stitch.py</A>
+<BR>
+
+<H3>Mac OS X Installation</H3>
+
+There seems to be a problem with the jpeg decoder in the Python Imaging Library (PIL) on OS X 10.5 Leopard. To avoid this, install PIL via <a href="http://www.macports.org">MacPorts</a>.
+Detailed steps are: 
+
+<ul>
+	<li>download and install MacPorts </li>
+	<li>on command line do "sudo port install py25-pil" </li>
+	<li>once PIL has finished building/installing, copy the contents of /opt/local/lib/python2.5/site-packages/ into /Library/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages.</li>
+</ul>
+
+
+<H3>Current Map URLs</H3>
+
+If the script reports that the map URLs are invalid, you need to replace the "map URL code section" section near the top of the script 
+with the code below (which contains currently valid URLs):
+<br>
+<br>
+<pre style="font-family: Andale Mono, Lucida Console, Monaco, fixed, monospace; color: #000000; background-color: #eee;
+font-size: 12px;border: 1px dashed #999999;line-height: 5px;padding: 5px; overflow: auto; width: 95%">
+<code>
+<div name="normalMapUrlFormat"        id="normalMapUrlFormat">        </div>
+<div name="satelliteMapUrlFormat"     id="satelliteMapUrlFormat">     </div> 
+<div name="physicalMapUrlFormat"      id="physicalMapUrlFormat">      </div> 
+<div name="skyVisibleMapUrlFormat"    id="skyVisibleMapUrlFormat">    </div> 
+</code>
+</pre>
+
+<!-- <div name="moonElevationMapUrlFormat" id="moonElevationMapUrlFormat"> </div> -->
+<!-- <div name="marsElevationMapUrlFormat" id="marsElevationMapUrlFormat"> </div> -->
+<!-- <div name="marsVisibleMapUrlFormat"   id="marsVisibleMapUrlFormat">   </div> -->
+<!-- <div name="marsInfraredMapUrlFormat"  id="marsInfraredMapUrlFormat">  </div> -->
+
+
+<H3>Coordinates tool</H3>
+
+This helps to find the (latitude, longitude) coordinates of interesting regions to generate maps from. 
+Dragging the markers around updates the coordinates shown below the map (note, the blue marker doesn't necessarily have to lie below 
+and to the left of the red one, any rectangle defined by the corners is valid for Stitch input). 
+The "Reset markers" button relocates the markers to lie at the default positions in the current viewport.
+The markers can also be moved via entering latitude and longitude coordinates directly in the text fields &mdash refresh the marker positions via the
+"Update markers" button (or just press return after entering the values).
+
+<BR>
+<BR>
+The coordinates thus obtained can be entered conveniently into the Stitch GUI by copying and pasting the
+text field below (enable the 'Use code?' option, and paste into the 'Code' field):
+
+<!-- Google map -->
+<TABLE width='100%'>
+<TR><TD align='center' valign='top'>
+
+<BR>
+<form >
+<input type="text" id="coordcode" name="coordcode" size=90>
+</form>
+<BR>
+
+<TABLE width='100%'>
+<TR>
+<TD align='left' valign='top'> 
+<button Type="button" id="resetButton"  Name="resetButton"   onClick="resetMarkers()">Reset markers</button> 
+<button Type="button" id="updateButton" Name="updateButton"  onClick="updateMarkers()">Update markers</button> 
+</TD>
+</TR>
+<TR><TD align='left' valign='top'>
+<div id="map_canvas" style="width: 100%; height: 500px; border: 2px black solid;"></div>
+</TD></TR>
+</TABLE>
+
+<table border="0" cellspacing="10" cellpadding="2">
+<tr>
+<td> Blue marker</td>
+<td> Red marker</td>
+</tr>
+
+<tr>
+<td>
+<form onSubmit="return updateMarkers();">
+Lat: 
+<input type="text" id="cornerBlueLat" name="cornerBlueLat">
+<br>
+Lng: 
+<input type="text" id="cornerBlueLng" name="cornerBlueLng">
+</form>
+</td>
+
+<td>
+<form onSubmit="return updateMarkers();">
+Lat:  
+<input type="text" id="cornerRedLat" name="cornerRedLat">
+<br>
+Lng:
+<input type="text" id="cornerRedLng" name="cornerRedLng">
+</form>
+</td>
+
+
+</tr>
+</table>
+
+</TD></TR>
+</TABLE>
+
+
+
+<!-- end of content and menu -->
+</TD></TR></TABLE>
+
+
+<!-- end of main column -->
+</TD></TR>
+</TABLE>
+
+<!-- end of page centering-->
+</TD></TR>
+</TABLE>
+
+</BODY>
+</HTML>
+
+
+
+
+
