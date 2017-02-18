@@ -50,11 +50,12 @@ from PIL import ImageMath
 #####################  start of map URL code section  ###################################################
 
 
-NRM_URL = "http://mt0.google.com/vt/lyrs=m@118&hl=en&src=api&x=0&y=0&z=0&s="
+#NRM_URL = "http://mt0.google.com/vt/lyrs=m@118&hl=en&src=api&x=0&y=0&z=0&s="
+
+NRM_URL = "http://mt1.google.com/vt/lyrs=y&x=1325&y=3143&z=13"
 SAT_URL = "http://khm0.google.com/kh/v=54&cookie=fzwq1C7TB0nUYgDs9ekB-1G3k3HolraYN4ITsQ&x=0&y=0&z=0&s="
 PHY_URL = "http://mt0.google.com/vt/v=app.118&hl=en&src=api&x=0&y=0&z=0&s="
 SKY_URL = "http://mw1.google.com/mw-planetary/sky/skytiles_v1/0_0_0.jpg"
-
 
 ######################  end of map URL code section  ####################################################
 
@@ -102,9 +103,17 @@ class ThreadingClass( threading.Thread ):
             # Otherwise url does not need to be fixed up
             else:    
                 gotTile = self.download(url, output)
-                
+    
             if (gotTile != True):
-                print "(Map URL " + url + " might be invalid or a server might be down. Visit http://www.jportsmouth.com/code/Stitch/stitch.html and update the map URL code section)"                
+                print "(Map URL " + url + " might be invalid, or a Google server might be down or refusing access."                
+
+            # Check file is a valid image
+            try:
+                im = Image.open(output)
+            except:
+                # remove bad image
+                print 'Bad file detected, ignoring url %s (need to do another download pass to fill hole)' % url
+                os.remove(output)
                 
             grabPool.task_done()
 
@@ -112,6 +121,7 @@ class ThreadingClass( threading.Thread ):
 
          try:
             urllib.urlretrieve( url, output )
+            print 'Tile downloaded from url: %s ...' % url
             return True
          except:
             return False
@@ -350,7 +360,7 @@ class StitchedMap:
                         
                     if mapurl:
 
-                        print 'Downloading tile ' + str(n) + '/' + str(self.nX*self.nY) + ', (i, j) = (' + str(tile[0]) + ',' + str(tile[1]) + ')'
+                        print 'Queuing tile ' + str(n) + '/' + str(self.nX*self.nY) + ', (i, j) = (' + str(tile[0]) + ',' + str(tile[1]) + ') for download ..'
                         grabPool.put( [ mapurl, self.makeIdentifier(tile) ] )
                         
                     else:
@@ -547,7 +557,7 @@ class StitchedMap:
       
     def stitch(self):
 
-        print '\nStitching tiles'
+        print '\nStitching tiles ...'
         self.pX = 256 * self.nX
         self.pY = 256 * self.nY
 
@@ -557,6 +567,7 @@ class StitchedMap:
         for i in range(0, self.nX):
             for j in range(0, self.nY):
 
+                print '\tprocessing tile %d, %d' % (i, j) 
                 tile = self.tiles[i][j]
                 if tile[3] == False:
                     continue
@@ -567,7 +578,10 @@ class StitchedMap:
                 cX = 256 * i
                 cY = self.pY - 256 * (j+1)
 
-                im = Image.open(path)
+                try:
+                    im = Image.open(path)
+                except:
+                    continue
                 Map.paste(im, (cX, cY))
 
         cropMap = self.crop(Map)
@@ -576,7 +590,7 @@ class StitchedMap:
         mappath = './stitched_' + self.makeIdentifier(self.tiles[0][0]) + '.jpg'
         cropMap.save(mappath)
 
-        print 'Saved stitched map ' + mappath
+        print '\nSaved stitched map ' + mappath
         print 'Finished.'
 
 
@@ -584,14 +598,38 @@ class StitchedMap:
 ############################ wxPython GUI interface ############################
 
 # Frame dimensions
-wX = 360
-wY = 430
+wX = 350
+wY = 460
 
 # border width
 bW = 20
 
 # coord panel height
 hY = 180
+
+class TransparentText(wx.StaticText):
+  def __init__(self, parent, id=wx.ID_ANY, label='', pos=wx.DefaultPosition,
+             size=wx.DefaultSize, style=wx.TRANSPARENT_WINDOW, name='transparenttext'):
+    wx.StaticText.__init__(self, parent, id, label, pos, size, style, name)
+
+    self.Bind(wx.EVT_PAINT, self.on_paint)
+    self.Bind(wx.EVT_ERASE_BACKGROUND, lambda event: None)
+    self.Bind(wx.EVT_SIZE, self.on_size)
+
+  def on_paint(self, event):
+    bdc = wx.PaintDC(self)
+    dc = wx.GCDC(bdc)
+
+    font_face = self.GetFont()
+    font_color = self.GetForegroundColour()
+
+    dc.SetFont(font_face)
+    dc.SetTextForeground(font_color)
+    dc.DrawText(self.GetLabel(), 0, 0)
+
+  def on_size(self, event):
+    self.Refresh()
+    event.Skip()
 
 class MainPanel(wx.Panel):
 
@@ -610,20 +648,22 @@ class MainPanel(wx.Panel):
     def __init__(self, parent, id):
 
         self.parent = parent
-        
+
         pos = wx.Point(bW,bW)
         size = wx.Size(wX-2*bW, hY)
         hspace = 4
         wx.Panel.__init__(self, parent, -1, pos, size)
-        
+
+        self.frame = parent
+        self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
 
         # Lat/Lng direct entry section
-        heading_LL = wx.StaticText(self, -1, "Lower left")
-        heading_UR = wx.StaticText(self, -1, "Upper right")
+        heading_LL = TransparentText(self, -1, "Lower left")
+        heading_UR = TransparentText(self, -1, "Upper right")
         fW = 125
 
-        lat_label = wx.StaticText(self, -1, "Latitude")
-        lon_label = wx.StaticText(self, -1, "Longitude")
+        lat_label = TransparentText(self, -1, "Latitude")
+        lon_label = TransparentText(self, -1, "Longitude")
         
         self.latLL_text  = wx.TextCtrl(self, -1, "-90.0", size=(fW, -1))
         self.latLL_text.SetInsertionPoint(0)
@@ -648,7 +688,7 @@ class MainPanel(wx.Panel):
                             (0, 0), (0,0), (0,0) ])
 
         # Lat/Lng code entry section
-        code_label = wx.StaticText(self, -1, "Code: ")
+        code_label = TransparentText(self, -1, "Code: ")
         self.coordCode = wx.TextCtrl(self, -1, "", size=(fW*2, -1))
         self.coordCode.SetInsertionPoint(0)
         self.Bind( wx.EVT_TEXT, self.EvtTextChanged, self.coordCode)
@@ -665,10 +705,11 @@ class MainPanel(wx.Panel):
         # 'Specify resolution' option enable checkbox
         self.useRes_rb = wx.RadioButton(self, -1, "Specify resolution", wx.DefaultPosition)
         self.useRes_rb.SetValue(True)
+        self.useRes_rb.SetTransparent(100)
         self.Bind( wx.EVT_RADIOBUTTON, self.EvtResolutionRadioButton, self.useRes_rb)
         self.useResolution = True
 
-        res_label = wx.StaticText(self, -1, "Approx. number of pixels: ")
+        res_label = TransparentText(self, -1, "Approx. number of pixels: ")
 
         self.res_text  = wx.TextCtrl(self, -1, "512", size=(fW/2, -1))
         self.res_text.SetInsertionPoint(0)
@@ -685,13 +726,14 @@ class MainPanel(wx.Panel):
         # 'Specify zoom level' option enable checkbox and entry
         self.useZoom_rb = wx.RadioButton(self, -1, "Specify zoom level", wx.DefaultPosition)
         self.useZoom_rb.SetValue(False)
+        self.useZoom_rb.SetTransparent(100)
         self.Bind( wx.EVT_RADIOBUTTON, self.EvtZoomRadioButton, self.useZoom_rb)
         self.useZoomLevel = False
 
-        self.zoomInfo_label = wx.StaticText(self, -1, "(lowest = 0, highest = 19)")
-        zoom_label = wx.StaticText(self, -1, "Zoom level: ")
+        self.zoomInfo_label = TransparentText(self, -1, "(min 0, max 19)")
+        zoom_label = TransparentText(self, -1, "Zoom level: ")
 
-        self.zoomLevel_text  = wx.TextCtrl(self, -1, "5", size=(fW/2, -1))
+        self.zoomLevel_text  = wx.TextCtrl(self, -1, "2", size=(fW/2, -1))
         self.zoomLevel_text.SetInsertionPoint(0)
         self.Bind( wx.EVT_TEXT, self.EvtTextChanged, self.zoomLevel_text)
         self.zoomLevel_text.Enable(False)
@@ -705,6 +747,7 @@ class MainPanel(wx.Panel):
         self.radioList = ['map', 'satellite', 'terrain', 'sky']
         rb = wx.RadioBox(self, -1, "Map type", wx.DefaultPosition, wx.DefaultSize,
                            self.radioList, 3, wx.RA_SPECIFY_COLS)
+        rb.SetTransparent(100)
         self.Bind( wx.EVT_RADIOBOX, self.EvtRadioBox, rb)
         self.maptype = 'map'
 
@@ -713,9 +756,6 @@ class MainPanel(wx.Panel):
 
         # Tiles info
         self.tilesInfo_label  = wx.StaticText(self, -1, '', size=(fW, -1))
-        ziFont = wx.Font(10, wx.NORMAL, wx.NORMAL, wx.BOLD, False, u'Courier')
-        self.tilesInfo_label.SetFont(ziFont)
-
         # Run button
         b = wx.Button(self, -1, "Run")
         self.Bind(wx.EVT_BUTTON, self.OnRun, b)
@@ -742,6 +782,20 @@ class MainPanel(wx.Panel):
         self.updateMapParams()
         
 
+    def OnEraseBackground(self, evt):
+        # Add a background image
+        dc = evt.GetDC()
+        if not dc:
+            dc = wx.ClientDC(self)
+            rect = self.GetUpdateRegion().GetBox()
+            dc.SetClippingRect(rect)
+        dc.Clear()
+        try:
+            bmp = wx.Bitmap("tov-stitch.jpg")
+            dc.DrawBitmap(bmp, 0, 0)
+        except:
+            pass
+        
     def updateMapParams(self):
 
         lat = None
@@ -750,7 +804,6 @@ class MainPanel(wx.Panel):
         if self.useCode == True:
 
             coords = self.coordCode.GetValue().split('_')
-
             if len(coords) != 4:
                 print 'Code cannot be parsed into coordinates, unable to generate map.'
                 return False
@@ -758,13 +811,14 @@ class MainPanel(wx.Panel):
             # Ensure that the 0th corner is lower left, even if the user didn't make it so
             try:
                 lat = (coords[1], coords[3])
-                if float(lat[1]) < float(lat[0]):
-                    lat = (coords[3], coords[1])
+                if float(lat[1]) < float(lat[0]): lat = (coords[3], coords[1])
                 lon = (coords[0], coords[2])
                 if float(lon[1]) < float(lon[0]):
                     lon = (coords[2], coords[0])
-            except:
+
+            except Exception as e: 
                 print 'Code cannot be parsed into coordinates, unable to generate map.'
+                print str(e)
                 return False
                 
         else:
@@ -778,8 +832,9 @@ class MainPanel(wx.Panel):
                 lon = (self.lonLL_text.GetValue(), self.lonUR_text.GetValue())
                 if float(lon[1]) < float(lon[0]):
                     lon = ( self.lonUR_text.GetValue(), self.lonLL_text.GetValue())
-            except:
+            except Exception as e: 
                 print 'Invalid longitude/latitude values, unable to generate map.'
+                print str(e)
                 return False
 
         zoomLevel = -1
@@ -804,9 +859,8 @@ class MainPanel(wx.Panel):
         nX = abs(tileB[0] - tileA[0]) + 1
         nY = abs(tileB[1] - tileA[1]) + 1
 
-        tileinfo = ' Will download ' + str(nX*nY) + ' tiles: (' + str(tileA[0]) + ',' + str(tileA[1]) + ') to (' + str(tileB[0]) + ',' + str(tileB[1]) + ')'
+        tileinfo = ' Will download ' + str(nX*nY) + ' tiles'
         self.tilesInfo_label.SetLabel(tileinfo)
-
         return True
          
 
@@ -830,7 +884,8 @@ class MainPanel(wx.Panel):
 
     def EvtCoordCheckBox(self, event):
         
-        self.useCode = event.Checked()
+
+        self.useCode = event.IsChecked()
         if self.useCode:
             self.coordCode.Enable(True)
         else:
@@ -886,8 +941,8 @@ class MainWindow(wx.Frame):
             thread = ThreadingClass()
             thread.start()
             self.threads.append(thread)
-            
-        wx.Frame.__init__(self, parent, wx.ID_ANY, title, wx.DefaultPosition, wx.Size(wX, wY))
+  
+        wx.Frame.__init__(self, parent, wx.ID_ANY, title, wx.DefaultPosition, wx.Size(wX, wY), wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
         controlPanel = MainPanel(self, -1)
 
     def __del__(self):
@@ -902,7 +957,6 @@ class MainWindow(wx.Frame):
 app = wx.PySimpleApp()
 
 frame = MainWindow(None, -1, "Stitch")
-
 frame.Show(True)
 
 app.MainLoop()
