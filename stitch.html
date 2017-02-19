@@ -8,7 +8,7 @@
 <STYLE type='text/css'><!--
 BODY { font-family: verdana, arial; }
 P { font-size: 12px; }
-H1 { font-size: 20px; color: #B00000; margin-top: 0px; }
+H1 { font-size: 24px; color: #B00000; margin-top: 0px; }
 H2 { font-size: 16px; padding-top: 6px; }
 H3 { font-size: 13px; padding-top: 6px; }
 HR { color: #A00000; background-color: #A00000; height: 2px; border: 0px; margin: 13px 0px; }
@@ -35,11 +35,11 @@ SPAN.date { color: #B00000; }
   // http://www.jportsmouth.com
 ----------------------------------------------------------------------------------->
 
-<script src="http://maps.google.com/maps?file=api&v=2&key=AIzaSyCB07QaKZDFPDZ52IJx-I0ZC5-YDg536-g"
+<script src="http://maps.google.com/maps?file=api&v=2&key=ABQIAAAAX9TGfrzmvpTmZ2579h9_hBRLtxenowuMQeodhRRzuZuNOo123RQPBnbNPByq9oAAgMX2hF6FW1epPQ"
 type="text/javascript"> 
 </script>
 
-<script src="http://www.google.com/uds/api?file=uds.js&v=1.0&source=uds-msw&key=AIzaSyCB07QaKZDFPDZ52IJx-I0ZC5-YDg536-g"
+<script src="http://www.google.com/uds/api?file=uds.js&v=1.0&source=uds-msw&key=ABQIAAAAX9TGfrzmvpTmZ2579h9_hBRLtxenowuMQeodhRRzuZuNOo123RQPBnbNPByq9oAAgMX2hF6FW1epPQ"
 type="text/javascript"> 
 </script>
  
@@ -59,36 +59,11 @@ type="text/javascript">
         map = new GMap2(document.getElementById("map_canvas"));
         map.addControl(new GLargeMapControl());
         map.addControl(new GMapTypeControl(false));
-        
-		zeroPt = new GPoint(0,0);
-		var NORMAL_MAP_URL_FORMAT    = G_NORMAL_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
-		var SATELLITE_MAP_URL_FORMAT = G_SATELLITE_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
-		var PHYSICAL_MAP_URL_FORMAT  = G_PHYSICAL_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
-		
-		var MOON_ELEVATION_MAP_URL_FORMAT    = G_MOON_ELEVATION_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
-		var MARS_ELEVATION_MAP_URL_FORMAT = G_MARS_ELEVATION_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
-		var MARS_VISIBLE_MAP_URL_FORMAT    = G_MARS_VISIBLE_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
-		var MARS_INFRARED_MAP_URL_FORMAT  = G_MARS_INFRARED_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
-		var SKY_VISIBLE_MAP_URL_FORMAT  = G_SKY_VISIBLE_MAP.getTileLayers()[0].getTileUrl(zeroPt, 0);
-		
-    	document.getElementById("normalMapUrlFormat").innerHTML        = "NRM_URL = \"" + NORMAL_MAP_URL_FORMAT + "\"";
-    	document.getElementById("satelliteMapUrlFormat").innerHTML     = "SAT_URL = \"" + SATELLITE_MAP_URL_FORMAT + "\"";
-    	document.getElementById("physicalMapUrlFormat").innerHTML      = "PHY_URL = \"" + PHYSICAL_MAP_URL_FORMAT + "\"";
-    	document.getElementById("skyVisibleMapUrlFormat").innerHTML    = "SKY_URL = \"" + SKY_VISIBLE_MAP_URL_FORMAT + "\"";
-    	//document.getElementById("moonElevationMapUrlFormat").innerHTML = "MOE_URL = \"" + MOON_ELEVATION_MAP_URL_FORMAT + "\"";
-    	//document.getElementById("marsElevationMapUrlFormat").innerHTML = "MAE_URL = \"" + MARS_ELEVATION_MAP_URL_FORMAT + "\"";
-    	//document.getElementById("marsVisibleMapUrlFormat").innerHTML   = "MAV_URL = \"" + MARS_VISIBLE_MAP_URL_FORMAT + "\"";
-    	//document.getElementById("marsInfraredMapUrlFormat").innerHTML  = "MAI_URL = \"" + MARS_INFRARED_MAP_URL_FORMAT + "\"";
-    	
+        		   	
         map.addMapType(G_NORMAL_MAP);
         map.addMapType(G_SATELLITE_MAP);
-        map.removeMapType(G_HYBRID_MAP);
+        map.addMapType(G_HYBRID_MAP);
         map.addMapType(G_PHYSICAL_MAP);
-        map.addMapType(G_SKY_VISIBLE_MAP);
-        //map.addMapType(G_MOON_ELEVATION_MAP);
-        //map.addMapType(G_MARS_ELEVATION_MAP); 
-        //map.addMapType(G_MARS_VISIBLE_MAP);
-        //map.addMapType(G_MARS_INFRARED_MAP);
         
         map.enableContinuousZoom();
         map.enableScrollWheelZoom();
@@ -173,11 +148,6 @@ type="text/javascript">
         map.addOverlay(polyline3);
     }
 
-    function initialize() 
-    {
-        var application = new MyApplication();
-    }
-    
     function updateBox()
     {
         map.removeOverlay(polyline0);
@@ -244,6 +214,8 @@ type="text/javascript">
         document.getElementById("cornerRedLng").value = redMarker.getLatLng().lng();
         updateCode();
         updateBox();
+
+        console.log('done reset');
     }
     
     function updateMarkers()
@@ -262,6 +234,13 @@ type="text/javascript">
         
         return false;
     }
+
+    function initialize() 
+    {
+        var application = new MyApplication();
+        resetMarkers();
+    }
+    
 
 </script>
 
@@ -283,25 +262,6 @@ type="text/javascript">
 <H1>Stitch</H1>
 <HR>
 
- <!-- menu and pics -->
-<TABLE max-width="834" cellpadding='6' cellspacing='0' border=0>
-<COLGROUP><COL width='150'><COL></COLGROUP>
-<TR><TD valign='top'>
-
-<!-- menu -->
-<P><A class='menu' href='../../index.html'>home</A></P>
-<P><A class='menu' href='../../artwork/artwork.html'>artwork</A></P>
-<P><A class='menu' href='../code.html'>code</A></P>
-<BR>
-</TD> 
-
-
- 
- <!-- content table -->
-<TD valign='top'>
-</TD><TD valign='top'>
-
-
 <!-- images --->
 
 <table border="0" cellspacing="0" cellpadding="4">
@@ -315,24 +275,10 @@ type="text/javascript">
 
 <tr>
 <td colspan="2" align="left" valign="top" width="33%" ">
-    <a href="./stitchUI.png"  target="_self"> <img src="./thumbnails/stitchUI_thumbnail.png" alt="" /></a>
+    <a> <img src="./images/ui.png" alt="" height=400/></a>
 </td>
 <td colspan="2" align="left" valign="top" width="33%" ">
-    <a href="./map_hybrid_31623_21249.jpg"  target="_self"> <img src="./thumbnails/map_hybrid_31623_21249_thumbnail.jpg" alt="" /></a>
-</td>
-<td colspan="2" align="left" valign="top" width="33%" ">
-    <a href="./map_terrain_364_216.jpg"  target="_self"> <img src="./thumbnails/map_terrain_364_216_thumbnail.jpg" alt="" /></a>
-</td>
-</tr>
-
-<tr>
-<td colspan="2" align="left" valign="top" width="33%" ">
-</td>
-<td colspan="2" align="left" valign="top" width="33%" ">
-    3280x2632 (1.3 MB)
-</td>
-<td colspan="2" align="left" valign="top" width="33%" ">
-    8448x5376 (9 MB)
+    <a href="./images/wellington.jpg"  target="_self"> <img src="./images/wellington_thumbnail.png" alt="" height=400/></a>
 </td>
 </tr>
 
@@ -346,68 +292,26 @@ type="text/javascript">
 <P>Stitch is a Python script to assemble large Google maps. A rectangle of latitude and longitude is specified (or generated via the 
 coordinates tool below), as well as the desired map dimensions.
 The appropriate tiles are then automatically downloaded and stitched together into a single map (which is cropped
-to precisely match the specified rectangle).  Some examples of the humongous maps you can make are shown above &mdash; a street map of
-Dublin in the center, and a terrain map of the Tibetan plateau on the right (view in the browser at your peril).
+to precisely match the specified rectangle).  An examples of the large maps you can make is shown above.
 <br>
 <br>
-You can enter latitude and longitude coordinates directly, or use the tool below to convert a rectangle drawn in google maps
-into a text string code which can be copied and pasted into the GUI. Three map types are supported: satellite, hybrid (i.e. roads/boundaries
+Three map types are supported: satellite, hybrid (i.e. roads/boundaries
 overlaid on the satellite map), and terrain. The map dimensions are specified either as the number of pixels desired along the long edge of the rectangle (which will only be matched approximately by
 the stitched map, since no resampling is done), or alternatively by entering the zoom level of the Google tiles directly.
 <br>
 <br>
-Note that Google may temporarily block your IP if you download too many tiles. To combat this, on restarting Stitch, the tiles already downloaded do not need to 
-be downloaded again (provided the generated tiles/ directory is not deleted). 
+Note that Google may temporarily block your IP if you download too many tiles. To combat this use a VPN to switch proxy server on being blocked, then on restarting Stitch, the tiles already downloaded do not need to be downloaded again (provided the generated tiles/ directory is not deleted). This way extremely large maps can be generated.
 
+<H3>Installation</H3>
 
-
-
-<H3>Download v3.0</H3>
-
-You need to have the <a href="http://www.pythonware.com/products/pil/">Python Imaging Library</a> (PIL) and <a href="http://www.wxpython.org/">wxPython</a> installed.
-<BR>
-<BR>
-<A href="./stitch.py">stitch.py</A>
-<BR>
-
-<H3>Mac OS X Installation</H3>
-
-There seems to be a problem with the jpeg decoder in the Python Imaging Library (PIL) on OS X 10.5 Leopard. To avoid this, install PIL via <a href="http://www.macports.org">MacPorts</a>.
-Detailed steps are: 
-
-<ul>
-	<li>download and install MacPorts </li>
-	<li>on command line do "sudo port install py25-pil" </li>
-	<li>once PIL has finished building/installing, copy the contents of /opt/local/lib/python2.5/site-packages/ into /Library/Frameworks/Python.framework/Versions/2.5/lib/python2.5/site-packages.</li>
-</ul>
-
-
-<H3>Current Map URLs</H3>
-
-If the script reports that the map URLs are invalid, you need to replace the "map URL code section" section near the top of the script 
-with the code below (which contains currently valid URLs):
-<br>
-<br>
-<pre style="font-family: Andale Mono, Lucida Console, Monaco, fixed, monospace; color: #000000; background-color: #eee;
-font-size: 12px;border: 1px dashed #999999;line-height: 5px;padding: 5px; overflow: auto; width: 95%">
-<code>
-<div name="normalMapUrlFormat"        id="normalMapUrlFormat">        </div>
-<div name="satelliteMapUrlFormat"     id="satelliteMapUrlFormat">     </div> 
-<div name="physicalMapUrlFormat"      id="physicalMapUrlFormat">      </div> 
-<div name="skyVisibleMapUrlFormat"    id="skyVisibleMapUrlFormat">    </div> 
-</code>
-</pre>
-
-<!-- <div name="moonElevationMapUrlFormat" id="moonElevationMapUrlFormat"> </div> -->
-<!-- <div name="marsElevationMapUrlFormat" id="marsElevationMapUrlFormat"> </div> -->
-<!-- <div name="marsVisibleMapUrlFormat"   id="marsVisibleMapUrlFormat">   </div> -->
-<!-- <div name="marsInfraredMapUrlFormat"  id="marsInfraredMapUrlFormat">  </div> -->
-
+To run Stitch you just need to install the following Python libraries (all available via pip): wx, urllib, urllib2, PIL
 
 <H3>Coordinates tool</H3>
 
-This helps to find the (latitude, longitude) coordinates of interesting regions to generate maps from. 
-Dragging the markers around updates the coordinates shown below the map (note, the blue marker doesn't necessarily have to lie below 
+You can enter latitude and longitude coordinates directly, or use the tool below to convert a rectangle drawn in google maps
+into a text string code which can be copied and pasted into the GUI. The resulting stitched map will match exactly the red rectangle.
+
+<P>Dragging the markers around updates the coordinates shown below the map (note, the blue marker doesn't necessarily have to lie below 
 and to the left of the red one, any rectangle defined by the corners is valid for Stitch input). 
 The "Reset markers" button relocates the markers to lie at the default positions in the current viewport.
 The markers can also be moved via entering latitude and longitude coordinates directly in the text fields &mdash refresh the marker positions via the
