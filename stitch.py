@@ -62,6 +62,11 @@ SKY_URL = "http://mw1.google.com/mw-planetary/sky/skytiles_v1/0_0_0.jpg"
 
 # Queue. We drop all the urls in this queue
 grabPool = Queue.Queue( 0 )
+LOCK = threading.Lock()
+
+numTilesDownloaded = 0
+numTilesToDownload = 0
+Terminate = False
 
 # Background threads. We start a few of these
 class ThreadingClass( threading.Thread ):
@@ -95,7 +100,10 @@ class ThreadingClass( threading.Thread ):
             gotTile = False
             if( url.find( "%s" ) != -1 ):
                 for x in range(4):
-                    url = url % ( self.serverSelectCounter % 4 )
+                    try:
+                        url = url % ( self.serverSelectCounter % 4 )
+                    except:
+                        pass
                     self.serverSelectCounter = self.serverSelectCounter + 1
                     gotTile = self.download(url, output)
                     if gotTile: break
@@ -105,23 +113,33 @@ class ThreadingClass( threading.Thread ):
                 gotTile = self.download(url, output)
     
             if (gotTile != True):
-                print "(Map URL " + url + " might be invalid, or a Google server might be down or refusing access."                
-
-            # Check file is a valid image
-            try:
-                im = Image.open(output)
-            except:
-                # remove bad image
-                print 'Bad file detected, ignoring url %s (need to do another download pass to fill hole)' % url
-                os.remove(output)
+                LOCK.acquire()
+                print "(Map URL " + url + " might be invalid, or a Google server might be refusing access.)"    
+                LOCK.release()            
+            else:
+                # Check file is a valid image
+                fp = None
+                LOCK.acquire()
+                global numTilesDownloaded
+                global numTilesToDownload
+                try:
+                    fp = open(output, "rb")
+                    im = Image.open(fp)
+                    numTilesDownloaded += 1
+                    print 'Tile downloaded (%d/%d) from url: %s ...' % (numTilesDownloaded, numTilesToDownload, url)
+                except:
+                    # remove bad image
+                    print 'Bad file detected, ignoring tile %s (need to do another download pass to fill this hole)' % output
+                    if fp: fp.close()
+                    os.remove(output)
+                LOCK.release()
                 
             grabPool.task_done()
 
     def download( self, url, output ):
-
          try:
-            urllib.urlretrieve( url, output )
-            print 'Tile downloaded from url: %s ...' % url
+            resp = urllib2.urlopen(url)
+            urllib.urlretrieve(url, output)
             return True
          except:
             return False
@@ -186,6 +204,8 @@ class StitchedMap:
         print 'Zoom level: ', str(self.zoom)
 
         # Connect to Google maps and download tiles
+        global numTilesDownloaded
+        numTilesDownloaded = 0
         self.download()
 
         # Finally stitch the downloaded maps together into the final big map
@@ -329,11 +349,12 @@ class StitchedMap:
 
     def download(self):
 
+        global numTilesToDownload
+        numTilesToDownload = 0
+
         if os.path.exists("./tiles") != True:
              os.mkdir("./tiles")
 
-        print ''
-        n = 1
         for column in self.tiles:
             for tile in column:
 
@@ -341,38 +362,29 @@ class StitchedMap:
 
                 # If the tile with the expected identifier suffix already exists in the tiles directory,
                 # assume that is the one we want (allows execution to continue later if interrupted).
-                if os.path.exists(tilePath):
-                    print 'Using existing tile ' + str(n) + '/' + str(self.nX*self.nY) + (
-                    ', (i, j) = (' + str(tile[0]) + ',' + str(tile[1]) + ')' )
-
-                else:
-                    
+                if not os.path.exists(tilePath):
+                   
                     mapurl = ''
-
                     if self.maptype == 'map':              mapurl = self.gen_MAP_URL(tile)
                     elif self.maptype == 'satellite':      mapurl = self.gen_SAT_URL(tile)       
                     elif self.maptype == 'terrain':        mapurl = self.gen_PHY_URL(tile)
                     elif self.maptype == 'sky':            mapurl = self.gen_SKY_URL(tile)
-
                     else:
                         print 'Unknown map type! Quitting. Humph'
                         sys.exit()
                         
                     if mapurl:
-
-                        print 'Queuing tile ' + str(n) + '/' + str(self.nX*self.nY) + ', (i, j) = (' + str(tile[0]) + ',' + str(tile[1]) + ') for download ..'
+                        print 'Queuing tile (i, j) = (' + str(tile[0]) + ',' + str(tile[1]) + ') for download ..'
                         grabPool.put( [ mapurl, self.makeIdentifier(tile) ] )
-                        
+                        numTilesToDownload += 1
                     else:
-                            
-                        print 'Tile ' + str(n) + '/' + str(self.nX*self.nY) + (
-                            ', (i, j) = (' + str(tile[0]) + ',' + str(tile[1]) + ') is not stored by Google, and will be rendered black')
+                        print 'Tile (i, j) = (' + str(tile[0]) + ',' + str(tile[1]) + ') is not stored by Google, and will be rendered black'
                         tile[3] = False
+   
+        # Wait for all tile downloads to complete (or error)
+        grabPool.join()   
 
-                n += 1
-        grabPool.join()    
 
-    
     def makeIdentifier(self, tile):
 
         identifier = self.maptype + '_' + str(self.zoom) + '_'
@@ -580,10 +592,10 @@ class StitchedMap:
 
                 try:
                     im = Image.open(path)
+                    Map.paste(im, (cX, cY))
                 except:
                     continue
-                Map.paste(im, (cX, cY))
-
+                
         cropMap = self.crop(Map)
                     
         # give the map file a semi-unique name, derived from the lower-left tile coords
@@ -599,7 +611,7 @@ class StitchedMap:
 
 # Frame dimensions
 wX = 350
-wY = 460
+wY = 450
 
 # border width
 bW = 20
@@ -631,6 +643,8 @@ class TransparentText(wx.StaticText):
     self.Refresh()
     event.Skip()
 
+
+
 class MainPanel(wx.Panel):
 
     def OnSetFocus(self, evt):
@@ -652,7 +666,7 @@ class MainPanel(wx.Panel):
         pos = wx.Point(bW,bW)
         size = wx.Size(wX-2*bW, hY)
         hspace = 4
-        wx.Panel.__init__(self, parent, -1, pos, size)
+        wx.Panel.__init__(self, parent, -1, pos, size, style=wx.BORDER_SUNKEN)
 
         self.frame = parent
         self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
@@ -791,8 +805,9 @@ class MainPanel(wx.Panel):
             dc.SetClippingRect(rect)
         dc.Clear()
         try:
-            bmp = wx.Bitmap("tov-stitch.jpg")
-            dc.DrawBitmap(bmp, 0, 0)
+            if os.path.exists("./images/tov-stitch.jpg"):
+                    bmp = wx.Bitmap("./images/tov-stitch.jpg")
+                    dc.DrawBitmap(bmp, 0, 0)
         except:
             pass
         
@@ -865,13 +880,14 @@ class MainPanel(wx.Panel):
          
 
     def OnRun(self, evt):
-
         if self.updateMapParams():
+            with grabPool.mutex:
+                grabPool.queue.clear()
+            grabPool.join()   
             self.gmap.generate()
 
 
     def EvtRadioBox(self, event):
-
         maptype = ''
         i = event.GetInt()
         if i == 0:   self.maptype = 'map'
@@ -883,8 +899,6 @@ class MainPanel(wx.Panel):
 
 
     def EvtCoordCheckBox(self, event):
-        
-
         self.useCode = event.IsChecked()
         if self.useCode:
             self.coordCode.Enable(True)
@@ -894,28 +908,23 @@ class MainPanel(wx.Panel):
          
 
     def EvtResolutionRadioButton(self, event):
-
         self.zoomLevel_text.Enable(False)
         self.res_text.Enable(True)
         self.updateMapParams()
 
               
     def EvtZoomRadioButton(self, event):
-
         self.zoomLevel_text.Enable(True)
         self.res_text.Enable(False)
         self.updateMapParams()
 
     def EvtTextChanged(self, event):
-
         if self.useZoom_rb.GetValue():
-
             zoomLevel = 0
             try:
                 zoomLevel = int(self.zoomLevel_text.GetValue())
             except:
                 pass
-
             minZoom = 0
             maxZoom = 19 
             if (zoomLevel<minZoom):
@@ -941,12 +950,11 @@ class MainWindow(wx.Frame):
             thread = ThreadingClass()
             thread.start()
             self.threads.append(thread)
-  
         wx.Frame.__init__(self, parent, wx.ID_ANY, title, wx.DefaultPosition, wx.Size(wX, wY), wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
         controlPanel = MainPanel(self, -1)
 
     def __del__(self):
-
+        grabPool.join()   
         for thread in self.threads:
             thread.join()
 
